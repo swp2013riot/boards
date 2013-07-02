@@ -7,6 +7,9 @@ endif
 ifneq (,$(findstring uart0,$(USEMODULE)))
 	OBJ += $(BINDIR)native-uart0.o
 endif
+ifneq (,$(findstring stk1160,$(USEMODULE)))
+	OBJ += $(BINDIR)native-stk1160.o
+endif
 DEP = $(SRC:%.c=$(BINDIR)%.d)
 
 INCLUDES += -I$(RIOTBOARD)/native/include/
