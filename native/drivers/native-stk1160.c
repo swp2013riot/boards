@@ -40,6 +40,7 @@
 #define LIBUSB_EVENT_HANDLER_THREAD_PRIORITY 10
 char event_handler_stack[STACK_SIZE];
 
+libusb_context* stk1160_ctx;
 libusb_device_handle* stk1160_usb_device_handle;
 stk1160_process_data_cb_handler cb_handler = NULL;
 
@@ -54,13 +55,13 @@ void stk1160_arch_init(void)
     libusb_device*  device_found = NULL;
 
     int ret_init;
-    if ((ret_init = libusb_init(NULL)) != 0) {
+    if ((ret_init = libusb_init(&stk1160_ctx)) != 0) {
         printf("stk1160_arch_init: %s\n", libusb_error_name(ret_init));
     }
 
-    libusb_set_debug(NULL, 3);
+    libusb_set_debug(stk1160_ctx, LIBUSB_LOG_LEVEL_DEBUG);
 
-    ssize_t device_count = libusb_get_device_list(NULL, &device_list);
+    ssize_t device_count = libusb_get_device_list(stk1160_ctx, &device_list);
 
     if (device_count < 0) {
         printf("stk1160_arch_init: no devices found\n");
@@ -143,10 +144,6 @@ int init_iso_transfer(int num_iso_packets, int buffer_size, stk1160_process_data
     libusb_set_interface_alt_setting(stk1160_usb_device_handle, 0, 5);
     ret = libusb_submit_transfer(transfer);
     printf("init_iso_transfer: ret2 == %d \"%s\"\n", ret, libusb_error_name(ret));
-    
-    //hwtimer_wait(HWTIMER_TICKS(10*1000));
-    //libusb_handle_events(NULL);
-    //hwtimer_wait(HWTIMER_TICKS(10*1000));
     //struct timeval t = {0, 0};
     //libusb_handle_events_timeout_completed(NULL, &t, NULL);
     
@@ -185,6 +182,7 @@ void libusb_event_handling_thread(void)
     {
         printf("libusb_event_handling_thread ...\n");        hwtimer_wait(HWTIMER_TICKS(10*1000));
         struct timeval t = {0, 0};
-        libusb_handle_events_timeout_completed(NULL, &t, NULL);
+        libusb_handle_events_timeout_completed(stk1160_ctx, &t, NULL);
+        //libusb_handle_events_timeout_completed(NULL, &t, NULL);
     }
 }
