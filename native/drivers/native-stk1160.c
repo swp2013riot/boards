@@ -125,7 +125,7 @@ int usb_control_msg(uint8_t bRequestType,
 
 int init_iso_transfer(int num_iso_packets, int buffer_size, stk1160_process_data_cb_handler handler)
 {
-   thread_create(event_handler_stack, STACK_SIZE, LIBUSB_EVENT_HANDLER_THREAD_PRIORITY, 0, libusb_event_handling_thread, "libusb event handling thread");
+    thread_create(event_handler_stack, STACK_SIZE, LIBUSB_EVENT_HANDLER_THREAD_PRIORITY, 0, libusb_event_handling_thread, "libusb event handling thread");
 
     // TODO: cb_handler in libusb_transfer->user_data reinstopfen
     cb_handler = handler;
@@ -135,7 +135,7 @@ int init_iso_transfer(int num_iso_packets, int buffer_size, stk1160_process_data
     transfer = libusb_alloc_transfer(num_iso_packets);
     printf("init_iso_transfer: transfer == %p\n", transfer);
     
-    buffer = malloc(buffer_size);
+    buffer = malloc(num_iso_packets * buffer_size);
     int ret;
     libusb_fill_iso_transfer(transfer, stk1160_usb_device_handle, USB_ENDPOINT_IN | 0x2, buffer, buffer_size, num_iso_packets, iso_handler, NULL, 100);
     
@@ -144,10 +144,6 @@ int init_iso_transfer(int num_iso_packets, int buffer_size, stk1160_process_data
     libusb_set_interface_alt_setting(stk1160_usb_device_handle, 0, 5);
     ret = libusb_submit_transfer(transfer);
     printf("init_iso_transfer: ret2 == %d \"%s\"\n", ret, libusb_error_name(ret));
-    //struct timeval t = {0, 0};
-    //libusb_handle_events_timeout_completed(NULL, &t, NULL);
-    
-    
 }
 
 void iso_handler(struct libusb_transfer *transfer)
@@ -155,22 +151,24 @@ void iso_handler(struct libusb_transfer *transfer)
     int i;
     for (i = 0; i < transfer->num_iso_packets; i++)
     {
-        printf("iso_handler: status == %d \"%s\"\n", transfer->iso_packet_desc[i].status, libusb_error_name(transfer->iso_packet_desc[i].status));
+        printf("iso_handler: i == %d, status == %d \"%s\"\n", i, transfer->iso_packet_desc[i].status, libusb_error_name(transfer->iso_packet_desc[i].status));
 
         if (transfer->iso_packet_desc[i].status == 0)
         {
             uint8_t *data = libusb_get_iso_packet_buffer_simple(transfer, i);
             uint16_t length = transfer->iso_packet_desc[i].length;
 
-            cb_handler(0, data, length);
+            cb_handler(data, length);
         }
         else
         {
             /* we are doomed */
             /* explanation: an error happened, rethrow */
-            cb_handler(1, NULL, 0);
+            printf("iso_handler: got invalid iso_packet ...\n");
         }
     }
+
+    libusb_submit_transfer(transfer);
 }
 
 void libusb_event_handling_thread(void)
@@ -180,9 +178,9 @@ void libusb_event_handling_thread(void)
     
     while (1)
     {
-        printf("libusb_event_handling_thread ...\n");        hwtimer_wait(HWTIMER_TICKS(10*1000));
+        printf("libusb_event_handling_thread ...\n");
+        hwtimer_wait(HWTIMER_TICKS(10*1000));
         struct timeval t = {0, 0};
         libusb_handle_events_timeout_completed(stk1160_ctx, &t, NULL);
-        //libusb_handle_events_timeout_completed(NULL, &t, NULL);
     }
 }
