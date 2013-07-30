@@ -45,7 +45,7 @@ libusb_device_handle* stk1160_usb_device_handle;
 stk1160_process_data_cb_handler cb_handler = NULL;
 
 /**
- * set up something ...
+ * find usb device and take ownership
  */
 void stk1160_arch_init(void)
 {
@@ -56,7 +56,7 @@ void stk1160_arch_init(void)
 
     int ret_init;
     if ((ret_init = libusb_init(&stk1160_ctx)) != 0) {
-        printf("stk1160_arch_init: %s\n", libusb_error_name(ret_init));
+        DEBUG("stk1160_arch_init: %s\n", libusb_error_name(ret_init));
     }
 
     libusb_set_debug(stk1160_ctx, LIBUSB_LOG_LEVEL_DEBUG);
@@ -64,7 +64,7 @@ void stk1160_arch_init(void)
     ssize_t device_count = libusb_get_device_list(stk1160_ctx, &device_list);
 
     if (device_count < 0) {
-        printf("stk1160_arch_init: no devices found\n");
+        DEBUG("stk1160_arch_init: no devices found\n");
         return;
     }
 
@@ -75,7 +75,7 @@ void stk1160_arch_init(void)
 
         int r;
         if ((r = libusb_get_device_descriptor(device, &device_desc)) != 0) {
-            printf("stk1160_arch_init: %s\n", libusb_error_name(ret_init));
+            DEBUG("stk1160_arch_init: %s\n", libusb_error_name(ret_init));
         }
 
         if (device_desc.idVendor == STK1160_VENDOR_ID && device_desc.idProduct == STK1160_PRODUCT_ID) {
@@ -85,29 +85,27 @@ void stk1160_arch_init(void)
     }
 
     if (device_found == NULL) {
-        printf("stk1160_arch_init: couldn't find device\n");
+        DEBUG("stk1160_arch_init: couldn't find device\n");
         return;
     }
 
-    printf("stk1160_arch_init: found device! :-]\n");
+    DEBUG("stk1160_arch_init: found device! :-]\n");
 
     int ret_open;
     if ((ret_open = libusb_open(device_found, &stk1160_usb_device_handle)) != 0) {
-        printf("stk1160_arch_init: couldn't open device\n");
+        DEBUG("stk1160_arch_init: couldn't open device\n");
         return;
     }
 
-    printf("stk1160_arch_init: opened device! :-)\n");
+    DEBUG("stk1160_arch_init: opened device! :-)\n");
     
     int ret_claim;
     if ((ret_claim = libusb_claim_interface(stk1160_usb_device_handle, 0)) != 0) {
-        printf("stk1160_arch_init: couldn't claim interface\n");
+        DEBUG("stk1160_arch_init: couldn't claim interface\n");
         return;
     }
     
-    printf("stk1160_arch_init: claimed interface! :-D\n");
-    
-    /* hier müssen wir jetzt wissen, das der grabber hören will ... */
+    DEBUG("stk1160_arch_init: claimed interface! :-D\n");
 }
 
 int usb_control_msg(uint8_t bRequestType,
@@ -127,13 +125,12 @@ int init_iso_transfer(int num_iso_packets, int buffer_size, stk1160_process_data
 {
     thread_create(event_handler_stack, STACK_SIZE, LIBUSB_EVENT_HANDLER_THREAD_PRIORITY, 0, libusb_event_handling_thread, "libusb event handling thread");
 
-    // TODO: cb_handler in libusb_transfer->user_data reinstopfen
     cb_handler = handler;
     uint8_t *buffer;
 
     struct libusb_transfer *transfer;
     transfer = libusb_alloc_transfer(num_iso_packets);
-    printf("init_iso_transfer: transfer == %p\n", transfer);
+    DEBUG("init_iso_transfer: transfer == %p\n", transfer);
     
     buffer = malloc(num_iso_packets * buffer_size);
     int ret;
@@ -143,7 +140,7 @@ int init_iso_transfer(int num_iso_packets, int buffer_size, stk1160_process_data
     
     libusb_set_interface_alt_setting(stk1160_usb_device_handle, 0, 5);
     ret = libusb_submit_transfer(transfer);
-    printf("init_iso_transfer: ret2 == %d \"%s\"\n", ret, libusb_error_name(ret));
+    DEBUG("init_iso_transfer: ret2 == %d \"%s\"\n", ret, libusb_error_name(ret));
 }
 
 void iso_handler(struct libusb_transfer *transfer)
@@ -151,7 +148,7 @@ void iso_handler(struct libusb_transfer *transfer)
     int i;
     for (i = 0; i < transfer->num_iso_packets; i++)
     {
-        printf("iso_handler: i == %d, status == %d \"%s\"\n", i, transfer->iso_packet_desc[i].status, libusb_error_name(transfer->iso_packet_desc[i].status));
+        DEBUG("iso_handler: i == %d, status == %d \"%s\"\n", i, transfer->iso_packet_desc[i].status, libusb_error_name(transfer->iso_packet_desc[i].status));
 
         if (transfer->iso_packet_desc[i].status == 0)
         {
@@ -162,9 +159,8 @@ void iso_handler(struct libusb_transfer *transfer)
         }
         else
         {
-            /* we are doomed */
-            /* explanation: an error happened, rethrow */
-            printf("iso_handler: got invalid iso_packet ...\n");
+            /* TODO: add error handling */
+            DEBUG("iso_handler: got invalid iso_packet ...\n");
         }
     }
 
@@ -173,12 +169,12 @@ void iso_handler(struct libusb_transfer *transfer)
 
 void libusb_event_handling_thread(void)
 {
-    puts("hey ho!");
+    DEBUG("Starting stk1160 event handling thread");
     hwtimer_wait(HWTIMER_TICKS(10*1000));
     
     while (1)
     {
-        printf("libusb_event_handling_thread ...\n");
+        DEBUG("libusb_event_handling_thread ...\n");
         hwtimer_wait(HWTIMER_TICKS(10*1000));
         struct timeval t = {0, 0};
         libusb_handle_events_timeout_completed(stk1160_ctx, &t, NULL);
