@@ -44,9 +44,6 @@ libusb_context* stk1160_ctx;
 libusb_device_handle* stk1160_usb_device_handle;
 stk1160_process_data_cb_handler cb_handler = NULL;
 
-/**
- * find usb device and take ownership
- */
 void stk1160_arch_init(void)
 {
     stk1160_usb_device_handle = NULL;
