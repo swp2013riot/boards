@@ -1,20 +1,33 @@
+/******************************************************************************
+Copyright 2013, Freie Universitaet Berlin (FUB). All rights reserved.
+-------------------------------------------------------------------------------
+This file is part of RIOT.
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+RIOT is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program.  If not, see http://www.gnu.org/licenses/ .
+*******************************************************************************
+
 /**
- * Native Board stk1160_arch.h implementation
- *
- * Only measures time at the moment. Uses POSIX real-time extension
- * timer to generate periodic signal/interrupt.
- *
- * Copyright (C) 2013 Philipp Rosenkranz, Maximilian Mueller
- *
- * This file subject to the terms and conditions of the GNU General Public
- * License. See the file LICENSE in the top level directory for more details.
- *
- * @ingroup native_board
- * @ingroup stk1160
+ * @ingroup     stk1160
  * @{
+ */
+
+/**
  * @file
- * @author  Philipp Rosenkranz <philipp.rosenkranz@fu-berlin.de>
- * @author  Maximilian Mueller <m.f.mueller@fu-berlin.de>
+ * @brief       STK1160/SAA711X USB-video-grabber driver
+ *
+ * @author      Freie Universität Berlin, Computer Systems & Telematics
+ * @author      Philipp Rosenkranz, Freie Universität Berlin <philipp.rosenkranz@fu-berlin.de>
+ * @author      Maximilian Müller, Freie Universität Berlin <m.f.mueller@fu-berlin.de>
  */
 
 #include <stdio.h>
